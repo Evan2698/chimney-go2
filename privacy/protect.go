@@ -88,7 +88,7 @@ func newMethodWithCode(code uint16) EncryptThings {
 
 // MakeCompressKey ..
 func MakeCompressKey(srcKey string) []byte {
-	key := []byte("E234V678A012N456I890O234V678U012")
+	key := []byte("03047d1071e4634cf6eae9831117ecde")
 	tmp := BuildMacHash(key, srcKey)
 	out := [32]byte{0}
 	copy(out[:], tmp)
