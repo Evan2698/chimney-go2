@@ -14,9 +14,7 @@ import (
 )
 
 const (
-	protocolTCP  = "tcp"
-	protocolQuic = "quic"
-	offset4B     = 256
+	offset4B = 256
 )
 const (
 	socks5Version          uint8 = 0x5
@@ -98,10 +96,9 @@ func (s *serverHolder) Stop() {
 func (s *serverHolder) Serve() error {
 
 	log.Println("which network: ", s.Network)
-
 	// to TCP
 	log.Println("server run on " + s.ServerAddress + " with tcp protocol.")
-	l, err := net.Listen("tcp", s.ServerAddress)
+	l, err := net.Listen(s.Network, s.ServerAddress)
 	if err != nil {
 		log.Println("listen failed ", err)
 		return err
