@@ -3,12 +3,11 @@ package utils
 import (
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 )
 
 func RetrieveExePath() (string, error) {
-	file, err := exec.LookPath(os.Args[0])
+	file, err := os.Executable()
 	if err != nil {
 		return "", err
 	}
