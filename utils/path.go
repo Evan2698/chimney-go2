@@ -18,3 +18,13 @@ func RetrieveExePath() (string, error) {
 	log.Print("The path is ", re)
 	return filepath.Dir(re), err
 }
+
+func RetrieveCertsPath() (string, error) {
+	exePath, err := RetrieveExePath()
+	if err != nil {
+		return "", err
+	}
+
+	exePath = exePath + "/certs"
+	return exePath, err
+}
