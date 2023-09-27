@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 	"strconv"
+	"sync"
 )
 
 func RunClient(settings ProxySetting) error {
@@ -49,6 +50,20 @@ func serveOn(con net.Conn, settings ProxySetting) {
 	dest := settings.NetworkMakeFun(settings.config)
 	defer dest.Close()
 
-	go io.Copy(dest, con)
-	go io.Copy(con, dest)
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+
+	go func() {
+		io.Copy(dest, con)
+		wg.Done()
+	}()
+	go func() {
+		io.Copy(con, dest)
+		wg.Done()
+	}()
+
+	wg.Wait()
+
+	log.Print("client handle once!!!!!!!")
+
 }
