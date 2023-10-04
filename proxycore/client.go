@@ -8,7 +8,7 @@ import (
 	"sync"
 )
 
-func RunClient(settings ProxySetting) error {
+func (c *clientHub) RunClient() error {
 
 	defer func() {
 		if err := recover(); err != nil {
@@ -16,7 +16,7 @@ func RunClient(settings ProxySetting) error {
 		}
 	}()
 
-	config := settings.config
+	config := c.Settings.config
 	serverTCP := net.JoinHostPort(config.Local, strconv.Itoa(int(config.LocalPort)))
 	l, err := net.Listen("tcp", serverTCP)
 	if err != nil {
@@ -32,14 +32,18 @@ func RunClient(settings ProxySetting) error {
 			log.Println(" accept failed ", err)
 			break
 		}
-		go serveOn(con, settings)
+		if c.Settings.Exit {
+			log.Println(" accept failed ", err)
+			break
+		}
+		go c.serveOn(con)
 	}
 
 	return nil
 
 }
 
-func serveOn(con net.Conn, settings ProxySetting) {
+func (c *clientHub) serveOn(con net.Conn) {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Println(" fatal error on serveOn: ", err)
@@ -47,9 +51,12 @@ func serveOn(con net.Conn, settings ProxySetting) {
 	}()
 
 	defer con.Close()
-	dest := settings.NetworkMakeFun(settings.config)
+	dest, err := c.Settings.NetworkMakeFun(c.Settings.config)
+	if err != nil {
+		log.Print("create client tls connection failed~", err)
+		return
+	}
 	defer dest.Close()
-
 	wg := sync.WaitGroup{}
 	wg.Add(2)
 

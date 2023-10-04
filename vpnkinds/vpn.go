@@ -15,8 +15,7 @@ func RunServer(config configure.AppConfig, isServer bool) {
 		if config.Which == KINDSOCKS5 {
 			runSocks5Server(config)
 		} else if config.Which == KINDTLS {
-
-			print("")
+			runTlsServer(config)
 		} else if config.Which == KINDQUIC {
 
 			print("")
@@ -29,8 +28,7 @@ func RunServer(config configure.AppConfig, isServer bool) {
 		if config.Which == KINDSOCKS5 {
 			runSocks5Client(config)
 		} else if config.Which == KINDTLS {
-
-			print("")
+			runTlsClient(config)
 		} else if config.Which == KINDQUIC {
 
 			print("")
