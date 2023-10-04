@@ -1,6 +1,9 @@
 package vpnkinds
 
-import "chimney-go2/configure"
+import (
+	"chimney-go2/configure"
+	"strings"
+)
 
 const (
 	KINDSOCKS5 = "socks5"
@@ -12,29 +15,30 @@ const (
 func RunServer(config configure.AppConfig, isServer bool) {
 
 	if isServer {
-		if config.Which == KINDSOCKS5 {
+		if strings.Compare(config.Which, KINDSOCKS5) == 0 {
 			runSocks5Server(config)
-		} else if config.Which == KINDTLS {
+		} else if strings.Compare(config.Which, KINDTLS) == 0 {
 			runTlsServer(config)
-		} else if config.Which == KINDQUIC {
+		} else if strings.Compare(config.Which, KINDQUIC) == 0 {
 
 			print("")
-		} else if config.Which == KINDBOTH {
+		} else if strings.Compare(config.Which, KINDBOTH) == 0 {
 
-			runSocks5Server(config)
+			//runSocks5Server(config)
+			print("")
 		}
 
 	} else {
-		if config.Which == KINDSOCKS5 {
+		if strings.Compare(config.Which, KINDSOCKS5) == 0 {
 			runSocks5Client(config)
-		} else if config.Which == KINDTLS {
+		} else if strings.Compare(config.Which, KINDTLS) == 0 {
 			runTlsClient(config)
-		} else if config.Which == KINDQUIC {
-
+		} else if strings.Compare(config.Which, KINDQUIC) == 0 {
 			print("")
-		} else if config.Which == KINDBOTH {
+		} else if strings.Compare(config.Which, KINDBOTH) == 0 {
 
-			runSocks5Client(config)
+			//runSocks5Client(config)
+			print("")
 		}
 	}
 

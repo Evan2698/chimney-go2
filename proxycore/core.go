@@ -35,27 +35,27 @@ func NewTLsClient(c configure.AppConfig) ClientProxy {
 		log.Println("get cert path error", err)
 		return nil
 	}
-	cert, err := tls.LoadX509KeyPair(certPath+"/client.pem", certPath+"/client.key")
-	if err != nil {
-		log.Println("load cert path error", err)
-		return nil
-	}
 
 	a := &clientHub{Settings: ProxySetting{
 		NetType: "tls",
 		NetworkMakeFun: func(ac configure.AppConfig) (io.ReadWriteCloser, error) {
+			cert, err := tls.LoadX509KeyPair(certPath+"/client.pem", certPath+"/client.key")
+			if err != nil {
+				log.Println("load cert path error", err)
+				return nil, err
+			}
 			config := tls.Config{Certificates: []tls.Certificate{cert}, InsecureSkipVerify: true}
 			serverHost := net.JoinHostPort(ac.Server, strconv.Itoa(int(ac.ServerPort)))
 			conn, err := tls.Dial("tcp", serverHost, &config)
 			if err != nil {
 				log.Println("client: dial:", err)
+				return nil, err
 			}
 			return conn, nil
 		},
 		config: c,
 		Exit:   false,
 	},
-		cert: cert,
 	}
 
 	return a

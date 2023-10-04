@@ -125,8 +125,9 @@ func NewTlsServer(config configure.AppConfig) (TlsServer, error) {
 	keyPath := certPath + "/server.key"
 
 	tlsServer := &tlsServerHolder{
-		Pem: pemPath,
-		Key: keyPath,
+		Pem:    pemPath,
+		Key:    keyPath,
+		Config: config,
 	}
 
 	return tlsServer, nil
