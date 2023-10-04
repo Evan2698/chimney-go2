@@ -1,10 +1,10 @@
 {
     "server": "127.0.0.1",
-    "server_port": 1025,
+    "server_port": 9056,
     "local": "127.0.0.1",
-    "local_port": 9999,
+    "local_port": 9055,
     "_which_": "quic, tls, both, socks5",
-    "which": "socks5",
+    "which": "tls",
     "method": "CHACHA-20",   
     "password": "Evan$%#@!#$@!123",
     "timeout": 600

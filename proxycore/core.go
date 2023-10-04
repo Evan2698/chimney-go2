@@ -48,9 +48,8 @@ func NewTLsClient(c configure.AppConfig) ClientProxy {
 			serverHost := net.JoinHostPort(ac.Server, strconv.Itoa(int(ac.ServerPort)))
 			conn, err := tls.Dial("tcp", serverHost, &config)
 			if err != nil {
-				log.Fatalf("client: dial: %s", err)
+				log.Println("client: dial:", err)
 			}
-
 			return conn, nil
 		},
 		config: c,
