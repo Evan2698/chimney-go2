@@ -39,7 +39,7 @@ func NewTLsClient(c configure.AppConfig) ClientProxy {
 	a := &clientHub{Settings: ProxySetting{
 		NetType: "tls",
 		NetworkMakeFun: func(ac configure.AppConfig) (io.ReadWriteCloser, error) {
-			cert, err := tls.LoadX509KeyPair(certPath+"/client.pem", certPath+"/client.key")
+			cert, err := tls.LoadX509KeyPair(certPath+"/client.crt", certPath+"/client.key")
 			if err != nil {
 				log.Println("load cert path error", err)
 				return nil, err

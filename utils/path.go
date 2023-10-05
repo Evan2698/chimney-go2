@@ -15,7 +15,7 @@ func RetrieveExePath() (string, error) {
 	if err != nil {
 		log.Print("The eacePath failed:", err.Error())
 	}
-	log.Print("The path is ", re)
+	//log.Print("The path is ", re)
 	return filepath.Dir(re), err
 }
 
