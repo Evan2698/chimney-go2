@@ -74,3 +74,7 @@ func (c *clientHub) serveOn(con net.Conn) {
 	log.Print("client handle once!!!!!!!")
 
 }
+
+func (c *clientHub) Close() {
+
+}

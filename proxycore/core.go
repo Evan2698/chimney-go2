@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net"
+	"path"
 	"strconv"
 )
 
@@ -21,6 +22,7 @@ type ProxySetting struct {
 
 type ClientProxy interface {
 	RunClient() error
+	Close()
 }
 
 type clientHub struct {
@@ -28,35 +30,37 @@ type clientHub struct {
 	cert     tls.Certificate
 }
 
-func NewTLsClient(c configure.AppConfig) ClientProxy {
+func NewTLsClient(c configure.AppConfig) (ClientProxy, error) {
 
-	certPath, err := utils.RetrieveCertsPath()
-	if err != nil {
-		log.Println("get cert path error", err)
-		return nil
-	}
-
-	a := &clientHub{Settings: ProxySetting{
-		NetType: "tls",
-		NetworkMakeFun: func(ac configure.AppConfig) (io.ReadWriteCloser, error) {
-			cert, err := tls.LoadX509KeyPair(certPath+"/client.crt", certPath+"/client.key")
-			if err != nil {
-				log.Println("load cert path error", err)
-				return nil, err
-			}
-			config := tls.Config{Certificates: []tls.Certificate{cert}, InsecureSkipVerify: true}
-			serverHost := net.JoinHostPort(ac.Server, strconv.Itoa(int(ac.ServerPort)))
-			conn, err := tls.Dial("tcp", serverHost, &config)
-			if err != nil {
-				log.Println("client: dial:", err)
-				return nil, err
-			}
-			return conn, nil
+	clientProxy := &clientHub{
+		Settings: ProxySetting{
+			NetType: "tls",
+			NetworkMakeFun: func(ac configure.AppConfig) (io.ReadWriteCloser, error) {
+				certPath, err := utils.RetrieveCertsPath()
+				if err != nil {
+					log.Println("get cert path error", err)
+					return nil, err
+				}
+				pemPath := path.Join(certPath, "client.crt")
+				keypath := path.Join(certPath, "client.key")
+				cert, err := tls.LoadX509KeyPair(pemPath, keypath)
+				if err != nil {
+					log.Println("load cert path error", err)
+					return nil, err
+				}
+				config := tls.Config{Certificates: []tls.Certificate{cert}, InsecureSkipVerify: true}
+				serverHost := net.JoinHostPort(ac.Server, strconv.Itoa(int(ac.ServerPort)))
+				conn, err := tls.Dial("tcp", serverHost, &config)
+				if err != nil {
+					log.Println("client: dial:", err)
+					return nil, err
+				}
+				return conn, nil
+			},
+			config: c,
+			Exit:   false,
 		},
-		config: c,
-		Exit:   false,
-	},
 	}
 
-	return a
+	return clientProxy, nil
 }

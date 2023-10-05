@@ -20,8 +20,7 @@ func RunServer(config configure.AppConfig, isServer bool) {
 		} else if strings.Compare(config.Which, KINDTLS) == 0 {
 			runTlsServer(config)
 		} else if strings.Compare(config.Which, KINDQUIC) == 0 {
-
-			print("")
+			runHttp3Server(config)
 		} else if strings.Compare(config.Which, KINDBOTH) == 0 {
 
 			//runSocks5Server(config)
@@ -34,7 +33,7 @@ func RunServer(config configure.AppConfig, isServer bool) {
 		} else if strings.Compare(config.Which, KINDTLS) == 0 {
 			runTlsClient(config)
 		} else if strings.Compare(config.Which, KINDQUIC) == 0 {
-			print("")
+			runHttp3Client(config)
 		} else if strings.Compare(config.Which, KINDBOTH) == 0 {
 
 			//runSocks5Client(config)

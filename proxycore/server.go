@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 	"sync"
@@ -33,7 +34,9 @@ var values = []string{
 	"HTTP_X_FORWARDED_FOR",
 }
 
-func (ts *tlsServerHolder) handleTunneling(w http.ResponseWriter, r *http.Request) {
+var hostIP = ""
+
+func handleTunneling(w http.ResponseWriter, r *http.Request) {
 	dest_conn, err := net.DialTimeout("tcp", r.Host, 10*time.Second)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
@@ -62,18 +65,19 @@ func transfer(destination io.WriteCloser, source io.ReadCloser, wg *sync.WaitGro
 	io.Copy(destination, source)
 	wg.Done()
 }
-func (ts *tlsServerHolder) handleHTTP(w http.ResponseWriter, req *http.Request) {
+func handleHTTP(w http.ResponseWriter, req *http.Request) {
 	resp, err := http.DefaultTransport.RoundTrip(req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
 	defer resp.Body.Close()
-	ts.copyHeader(w.Header(), resp.Header)
+	copyHeader(w.Header(), resp.Header)
 	w.WriteHeader(resp.StatusCode)
 	io.Copy(w, resp.Body)
 }
-func (ts *tlsServerHolder) copyHeader(dst, src http.Header) {
+
+func copyHeader(dst, src http.Header) {
 
 	for k, vv := range src {
 
@@ -88,7 +92,7 @@ func (ts *tlsServerHolder) copyHeader(dst, src http.Header) {
 		}
 
 		if flag {
-			dst.Add(k, "ip")
+			dst.Add(k, hostIP)
 			continue
 		}
 
@@ -107,7 +111,8 @@ func (ts *tlsServerHolder) ListenAndServeTLS() error {
 		return err
 	}
 
-	ca, err := os.ReadFile(caPath + "/root.crt")
+	rootCert := path.Join(caPath, "root.crt")
+	ca, err := os.ReadFile(rootCert)
 	if err != nil {
 		log.Print("read root file failed", err)
 		return err
@@ -121,9 +126,9 @@ func (ts *tlsServerHolder) ListenAndServeTLS() error {
 		Addr: serverHost,
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.Method == http.MethodConnect {
-				ts.handleTunneling(w, r)
+				handleTunneling(w, r)
 			} else {
-				ts.handleHTTP(w, r)
+				handleHTTP(w, r)
 			}
 		}),
 		// Disable HTTP/2.
@@ -152,10 +157,9 @@ func NewTlsServer(config configure.AppConfig) (TlsServer, error) {
 		log.Print("can not get cert path failed!", err)
 		return nil, err
 	}
-
-	pemPath := certPath + "/server.crt"
-	keyPath := certPath + "/server.key"
-
+	hostIP = config.Server
+	pemPath := path.Join(certPath, "server.crt")
+	keyPath := path.Join(certPath, "server.key")
 	tlsServer := &tlsServerHolder{
 		Pem:    pemPath,
 		Key:    keyPath,
