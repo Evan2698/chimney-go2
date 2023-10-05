@@ -4,10 +4,13 @@ import (
 	"chimney-go2/configure"
 	"chimney-go2/utils"
 	"crypto/tls"
+	"crypto/x509"
+	"errors"
 	"io"
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -97,6 +100,23 @@ func (ts *tlsServerHolder) copyHeader(dst, src http.Header) {
 
 func (ts *tlsServerHolder) ListenAndServeTLS() error {
 	serverHost := net.JoinHostPort(ts.Config.Server, strconv.Itoa(int(ts.Config.ServerPort)))
+	pool := x509.NewCertPool()
+	caPath, err := utils.RetrieveCertsPath()
+	if err != nil {
+		log.Println("get ca path failed", err)
+		return err
+	}
+
+	ca, err := os.ReadFile(caPath + "/root.crt")
+	if err != nil {
+		log.Print("read root file failed", err)
+		return err
+	}
+	ok := pool.AppendCertsFromPEM(ca)
+	if !ok {
+		log.Print("append root cert failed!")
+		return errors.New("append root cert failed")
+	}
 	server := &http.Server{
 		Addr: serverHost,
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -108,8 +128,20 @@ func (ts *tlsServerHolder) ListenAndServeTLS() error {
 		}),
 		// Disable HTTP/2.
 		TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler)),
+
+		TLSConfig: &tls.Config{
+			MinVersion: tls.VersionTLS13,
+			ClientAuth: tls.RequireAndVerifyClientCert,
+			ClientCAs:  pool,
+			CipherSuites: []uint16{
+				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+				tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
+				tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
+			},
+		},
 	}
-	err := server.ListenAndServeTLS(ts.Pem, ts.Key)
+	err = server.ListenAndServeTLS(ts.Pem, ts.Key)
 	log.Print("listen tls failed: ", err)
 	return err
 }
