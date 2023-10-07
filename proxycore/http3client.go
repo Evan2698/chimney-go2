@@ -12,7 +12,6 @@ import (
 	"strconv"
 
 	"github.com/quic-go/quic-go"
-	"github.com/quic-go/quic-go/http3"
 )
 
 type http3ClientHub struct {
@@ -36,10 +35,11 @@ func NewHttp3Client(c configure.AppConfig) (ClientProxy, error) {
 	}
 	tlsConf := &tls.Config{Certificates: []tls.Certificate{cert},
 		InsecureSkipVerify: true,
-		NextProtos:         []string{http3.NextProtoH3}}
+		NextProtos:         []string{httpProtocol}}
 	serverHost := net.JoinHostPort(c.Server, strconv.Itoa(int(c.ServerPort)))
+	quicConf := &quic.Config{}
 
-	conn, err := quic.DialAddr(context.Background(), serverHost, tlsConf, nil)
+	conn, err := quic.DialAddr(context.Background(), serverHost, tlsConf, quicConf)
 	if err != nil {
 		log.Println("DialAddr failed", err)
 		return nil, err

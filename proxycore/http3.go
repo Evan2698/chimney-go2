@@ -51,6 +51,11 @@ func (ts *http3ServerHolder) ListenAndServeTLS() error {
 		log.Print("append root cert failed!")
 		return errors.New("append root cert failed")
 	}
+	cert, err := tls.LoadX509KeyPair(ts.Pem, ts.Key)
+	if err != nil {
+		log.Println("load cert path error", err)
+		return err
+	}
 
 	go func() {
 		listenHttpServer()
@@ -67,7 +72,8 @@ func (ts *http3ServerHolder) ListenAndServeTLS() error {
 			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
 			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
 		},
-		NextProtos: []string{httpProtocol},
+		Certificates: []tls.Certificate{cert},
+		NextProtos:   []string{httpProtocol},
 	}
 
 	listener, err := quic.ListenAddr(serverHost, tlsConfig, quicConf)
