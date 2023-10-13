@@ -48,7 +48,7 @@ func NewTLsClient(c configure.AppConfig) (ClientProxy, error) {
 					log.Println("load cert path error", err)
 					return nil, err
 				}
-				config := tls.Config{Certificates: []tls.Certificate{cert}, InsecureSkipVerify: true}
+				config := tls.Config{Certificates: []tls.Certificate{cert}, InsecureSkipVerify: true, MinVersion: tls.VersionTLS13}
 				serverHost := net.JoinHostPort(ac.Server, strconv.Itoa(int(ac.ServerPort)))
 				conn, err := tls.Dial("tcp", serverHost, &config)
 				if err != nil {

@@ -9,14 +9,15 @@ import (
 
 // AppConfig ..
 type AppConfig struct {
-	ServerPort uint16 `json:"server_port"`
-	Server     string `json:"server"`
-	LocalPort  uint16 `json:"local_port"`
-	Local      string `json:"local"`
-	Which      string `json:"which"`
-	Method     string `json:"method"`
-	Password   string `json:"password"`
-	Timeout    uint32 `json:"timeout"`
+	ServerPort     uint16 `json:"server_port"`
+	Server         string `json:"server"`
+	QuicServerPort uint16 `json:"quic_server_port"`
+	LocalPort      uint16 `json:"local_port"`
+	Local          string `json:"local"`
+	Which          string `json:"which"`
+	Method         string `json:"method"`
+	Password       string `json:"password"`
+	Timeout        uint32 `json:"timeout"`
 }
 
 // Parse ..
@@ -44,6 +45,7 @@ func Parse(path string) (config *AppConfig, err error) {
 func DumpConfig(config *AppConfig) {
 	log.Println("server :", config.Server)
 	log.Println("server_port :", config.ServerPort)
+	log.Println("quic_server_port :", config.QuicServerPort)
 	log.Println("local_port :", config.LocalPort)
 	log.Println("local :", config.Local)
 	log.Println("which :", config.Which)
