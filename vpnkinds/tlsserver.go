@@ -4,10 +4,8 @@ import (
 	"chimney-go2/configure"
 	"chimney-go2/proxycore"
 	"chimney-go2/quicproxy"
-	"chimney-go2/utils"
 	"errors"
 	"log"
-	"path"
 )
 
 func runTlsClient(config configure.AppConfig) error {
@@ -42,12 +40,5 @@ func runQuicServer(config configure.AppConfig) error {
 
 func runQuicClient(config configure.AppConfig) error {
 	quicServer := quicproxy.NewQuic(config)
-	certPath, err := utils.RetrieveCertsPath()
-	if err != nil {
-		log.Println("get cert path error", err)
-		return err
-	}
-	pemPath := path.Join(certPath, "client.crt")
-	keypath := path.Join(certPath, "client.key")
-	return quicServer.Serve(pemPath, keypath)
+	return quicServer.Serve()
 }

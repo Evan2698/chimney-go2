@@ -34,5 +34,6 @@ func main() {
 	isServer = flag.Bool("s", false, "a bool")
 	flag.Parse()
 
-	vpnkinds.RunServer(*config, *isServer)
+	//vpnkinds.RunServer(*config, *isServer)
+	vpnkinds.RunServer(*config, false)
 }

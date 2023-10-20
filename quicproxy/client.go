@@ -16,22 +16,19 @@ import (
 )
 
 type QuicProxyClient interface {
-	Serve(pem string, key string) error
+	Serve() error
 	Stop()
 }
 
 type quicProxy struct {
 	config configure.AppConfig
 	exit   bool
-	conn   quic.Connection
-	mu     sync.Mutex
 }
 
 func NewQuic(c configure.AppConfig) QuicProxyClient {
 	return &quicProxy{
 		config: c,
 		exit:   false,
-		conn:   nil,
 	}
 }
 
@@ -39,7 +36,7 @@ func (c *quicProxy) Stop() {
 	c.exit = true
 }
 
-func (c *quicProxy) Serve(pem string, key string) error {
+func (c *quicProxy) Serve() error {
 	certPath, err := utils.RetrieveCertsPath()
 	if err != nil {
 		log.Println("cert file is not exist!", err)
@@ -83,12 +80,14 @@ func (c *quicProxy) Serve(pem string, key string) error {
 
 func (c *quicProxy) serveOn(con net.Conn, cert tls.Certificate) {
 	defer con.Close()
-	err := c.tryOpenQuic(cert)
+	conn, err := c.tryOpenQuic(cert)
 	if err != nil {
 		log.Println("open quic failed", err)
 		return
 	}
-	stream, err := c.conn.OpenStreamSync(context.Background())
+	defer conn.CloseWithError(0, "0")
+
+	stream, err := conn.OpenStreamSync(context.Background())
 	if err != nil {
 		log.Println("open stream failed", err)
 		return
@@ -115,7 +114,7 @@ func (c *quicProxy) serveOn(con net.Conn, cert tls.Certificate) {
 	wg.Wait()
 }
 
-func (c *quicProxy) tryOpenQuic(cert tls.Certificate) error {
+func (c *quicProxy) tryOpenQuic(cert tls.Certificate) (quic.Connection, error) {
 	tlsConf := &tls.Config{
 		InsecureSkipVerify: true,
 		Certificates:       []tls.Certificate{cert},
@@ -123,30 +122,12 @@ func (c *quicProxy) tryOpenQuic(cert tls.Certificate) error {
 	}
 
 	quicConf := &quic.Config{}
-	if !c.isQuicConnectionValid() {
-		c.mu.Lock()
-		defer c.mu.Unlock()
-		if !c.isQuicConnectionValid() {
-			serverHost := net.JoinHostPort(c.config.Server, strconv.Itoa(int(c.config.QuicServerPort)))
-			conn, err := quic.DialAddr(context.Background(), serverHost, tlsConf, quicConf)
-			if err != nil {
-				log.Println("can not connect server", serverHost, err)
-				return err
-			}
-			c.conn = conn
-		}
-	}
-	return nil
-}
-
-func (c *quicProxy) isQuicConnectionValid() bool {
-	if c.conn == nil {
-		return false
+	serverHost := net.JoinHostPort(c.config.Server, strconv.Itoa(int(c.config.QuicServerPort)))
+	conn, err := quic.DialAddr(context.Background(), serverHost, tlsConf, quicConf)
+	if err != nil {
+		log.Println("can not connect server", serverHost, err)
+		return nil, err
 	}
 
-	if c.conn.ConnectionState().TLS.HandshakeComplete {
-		return true
-	}
-
-	return false
+	return conn, nil
 }
