@@ -2,21 +2,32 @@ package quicproxy
 
 import (
 	"bufio"
+	"bytes"
 	"chimney-go2/configure"
 	"chimney-go2/utils"
 	"context"
 	"crypto/tls"
+	"fmt"
 	"io"
 	"log"
 	"net"
 	"net/http"
 	"path"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/quic-go/quic-go"
 )
+
+var values = []string{
+	"X-Client-Ip",
+	"HTTP_CLIENT_IP",
+	"HTTP_X_FORWARDED_FOR",
+}
+
+var hostIP = ""
 
 type QuicServer interface {
 	Serve() error
@@ -77,33 +88,93 @@ func acceptQuicAccept(conn quic.Connection) {
 	}
 }
 
-func acceptQuicStream(stream quic.Stream) {
-	defer stream.Close()
-	reader := bufio.NewReader(stream)
-	req, err := http.ReadRequest(reader)
+func writeHttpStatus(sb bytes.Buffer, status string) {
+	sb.WriteString(fmt.Sprintf("HTTP/1.1 %s OK\r\n", status))
+}
+
+func handleTunneling(r *http.Request, stream quic.Stream) error {
+	var sb bytes.Buffer
+	dest_conn, err := net.DialTimeout("tcp", r.Host, 10*time.Second)
 	if err != nil {
-		log.Println("parse http header failed!")
-		return
-	}
-	dest_conn, err := net.DialTimeout("tcp", req.Host, 10*time.Second)
-	if err != nil {
-		resp := []byte("HTTP/1.1 505")
-		stream.Write(resp)
-		return
+		writeHttpStatus(sb, "501")
+		stream.Write(sb.Bytes())
+		return nil
 	}
 	defer dest_conn.Close()
-
-	if req.Method == http.MethodConnect {
-		resp := []byte("HTTP/1.1 200")
-		stream.Write(resp)
-	}
-
+	writeHttpStatus(sb, "200")
+	stream.Write(sb.Bytes())
 	wg := sync.WaitGroup{}
 	wg.Add(2)
 	go transfer(dest_conn, stream, &wg)
 	go transfer(stream, dest_conn, &wg)
 	wg.Wait()
+
+	return nil
 }
+
+func formatHeader(sb bytes.Buffer, key string, value string) {
+	sb.WriteString(fmt.Sprintf("%s: %s\r\n", key, value))
+}
+
+func copyHeader(sb bytes.Buffer, header http.Header) {
+	for k, vv := range header {
+
+		flag := false
+		key := strings.ToLower(k)
+		for _, v := range values {
+			ip := strings.ToLower(v)
+			if strings.Contains(key, ip) {
+				flag = true
+				break
+			}
+		}
+
+		if flag {
+			formatHeader(sb, k, hostIP)
+			continue
+		}
+
+		for _, v := range vv {
+			formatHeader(sb, k, v)
+		}
+	}
+
+	sb.WriteString("\r\n")
+}
+
+func handleHTTP(r *http.Request, stream quic.Stream) error {
+	var sb bytes.Buffer
+	resp, err := http.DefaultTransport.RoundTrip(r)
+	if err != nil {
+		writeHttpStatus(sb, "501")
+		stream.Write(sb.Bytes())
+		return nil
+	}
+	defer resp.Body.Close()
+	writeHttpStatus(sb, "200")
+	copyHeader(sb, resp.Header)
+	stream.Write(sb.Bytes())
+
+	io.Copy(stream, resp.Body)
+	return nil
+}
+
+func acceptQuicStream(stream quic.Stream) {
+	defer stream.Close()
+	reader := bufio.NewReader(stream)
+	r, err := http.ReadRequest(reader)
+	if err != nil {
+		log.Println("parse http header failed!")
+		return
+	}
+
+	if r.Method == http.MethodConnect {
+		handleTunneling(r, stream)
+	} else {
+		handleHTTP(r, stream)
+	}
+}
+
 func transfer(destination io.WriteCloser, source io.ReadCloser, wg *sync.WaitGroup) {
 	io.Copy(destination, source)
 	wg.Done()
@@ -111,6 +182,7 @@ func transfer(destination io.WriteCloser, source io.ReadCloser, wg *sync.WaitGro
 
 func NewQuicSever(c configure.AppConfig) QuicServer {
 
+	hostIP = c.Server
 	return &quicServerHolder{
 		config: c,
 	}

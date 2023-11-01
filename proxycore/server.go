@@ -16,6 +16,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/elazarl/goproxy"
 )
 
 type TlsServer interface {
@@ -124,13 +126,14 @@ func (ts *tlsServerHolder) ListenAndServeTLS() error {
 	}
 	server := &http.Server{
 		Addr: serverHost,
-		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.Method == http.MethodConnect {
-				handleTunneling(w, r)
-			} else {
-				handleHTTP(w, r)
-			}
-		}),
+		// Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// 	if r.Method == http.MethodConnect {
+		// 		handleTunneling(w, r)
+		// 	} else {
+		// 		handleHTTP(w, r)
+		// 	}
+		// }),
+		Handler: goproxy.NewProxyHttpServer(),
 		// Disable HTTP/2.
 		TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler)),
 
