@@ -22,9 +22,8 @@ func RunServer(config configure.AppConfig, isServer bool) {
 		} else if strings.Compare(config.Which, KINDQUIC) == 0 {
 			runQuicServer(config)
 		} else if strings.Compare(config.Which, KINDBOTH) == 0 {
-
-			//runSocks5Server(config)
-			print("")
+			runSocks5Server(config)
+			runQuicServer(config)
 		}
 
 	} else {
@@ -35,9 +34,8 @@ func RunServer(config configure.AppConfig, isServer bool) {
 		} else if strings.Compare(config.Which, KINDQUIC) == 0 {
 			runQuicClient(config)
 		} else if strings.Compare(config.Which, KINDBOTH) == 0 {
-
-			//runSocks5Client(config)
-			print("")
+			runSocks5Client(config)
+			runQuicClient(config)
 		}
 	}
 
