@@ -50,7 +50,7 @@ func (c *quicProxy) Serve() error {
 		return err
 	}
 
-	serverTCP := net.JoinHostPort(c.config.Local, strconv.Itoa(int(c.config.LocalPort)))
+	serverTCP := net.JoinHostPort(c.config.Local, strconv.Itoa(int(c.config.LocalQuicPort)))
 	l, err := net.Listen("tcp", serverTCP)
 	if err != nil {
 		log.Println("listen failed ", err)

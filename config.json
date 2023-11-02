@@ -4,6 +4,7 @@
     "quic_server_port": 8443,
     "local": "127.0.0.1",
     "local_port": 9055,
+    "local_quic_port": 9057,
     "_which_": "quic, tls, both, socks5",
     "which": "quic",
     "method": "CHACHA-20",   
