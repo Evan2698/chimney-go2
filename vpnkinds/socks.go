@@ -5,6 +5,7 @@ import (
 	"chimney-go2/privacy"
 	"chimney-go2/socketcore"
 	"chimney-go2/socks5server"
+	"chimney-go2/udpserver"
 	"net"
 	"strconv"
 )
@@ -28,6 +29,7 @@ func runSocks5Server(config configure.AppConfig) {
 		I:             privacy.NewMethodWithName(config.Method),
 	}
 	ss := socks5server.NewServer(sconf, nil)
+	RunDNSServer(config)
 	ss.Serve()
 }
 
@@ -51,4 +53,12 @@ func runSocks5Client(config configure.AppConfig) {
 	}
 	ss := socks5server.NewServer(sconf, nil)
 	ss.Serve()
+}
+
+func RunDNSServer(config configure.AppConfig) {
+
+	udp := udpserver.NewUDPServer(net.JoinHostPort(config.Server, strconv.Itoa(int(config.DnsPort))),
+		privacy.NewMethodWithName(config.Method),
+		privacy.MakeCompressKey(config.Password))
+	udp.Run()
 }

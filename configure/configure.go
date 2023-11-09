@@ -12,6 +12,7 @@ type AppConfig struct {
 	ServerPort     uint16 `json:"server_port"`
 	Server         string `json:"server"`
 	QuicServerPort uint16 `json:"quic_server_port"`
+	DnsPort        uint16 `json:"dns_port"`
 	LocalPort      uint16 `json:"local_port"`
 	LocalQuicPort  uint16 `json:"local_quic_port"`
 	Local          string `json:"local"`
@@ -49,6 +50,7 @@ func DumpConfig(config *AppConfig) {
 	log.Println("quic_server_port :", config.QuicServerPort)
 	log.Println("local_port :", config.LocalPort)
 	log.Println("local_quic_port :", config.LocalQuicPort)
+	log.Println("dns_port :", config.DnsPort)
 	log.Println("local :", config.Local)
 	log.Println("which :", config.Which)
 	log.Println("method :", config.Method)
