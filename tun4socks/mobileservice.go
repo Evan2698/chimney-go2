@@ -9,6 +9,7 @@ import (
 	"chimney-go2/socketcore"
 	"chimney-go2/socks5server"
 	"chimney-go2/udpserver"
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -16,6 +17,15 @@ import (
 	"strconv"
 	"time"
 )
+
+var gudp udpserver.UDPServer
+var gtcp socks5server.Server
+
+const (
+	interIP = "127.0.0.1"
+)
+
+var interPort uint16 = 60000
 
 // BindSocket How do you think about ?
 type BindSocket interface {
@@ -50,9 +60,6 @@ func StopVPN() int {
 	return 0
 }
 
-var gudp udpserver.UDPServer
-var gtcp socks5server.Server
-
 func startChimney(pw string, remoteHost string, port, dnsPort int, pFun mobile.ProtectSocket) {
 	user := privacy.BuildMacHash(privacy.MakeCompressKey(pw), "WhereRU")
 	serverHost := net.JoinHostPort(remoteHost, strconv.Itoa(port))
@@ -65,13 +72,13 @@ func startChimney(pw string, remoteHost string, port, dnsPort int, pFun mobile.P
 		Network: "tcp",
 	}
 	sconf := &socks5server.SConfig{
-		ServerAddress: net.JoinHostPort("127.0.0.1", "9999"),
+		ServerAddress: net.JoinHostPort(interIP, fmt.Sprintf("%d", interPort)),
 		Network:       "tcp",
 		CC:            settings,
 		Tm:            600,
 	}
 	go func() {
-		localListen := net.JoinHostPort("127.0.0.1", "9999")
+		localListen := net.JoinHostPort(interIP, fmt.Sprintf("%d", interPort))
 		remote := net.JoinHostPort(remoteHost, strconv.Itoa(dnsPort))
 		gudp = udpserver.NewUDPClientServer(localListen, remote,
 			privacy.NewMethodWithName("CHACHA-20"),
@@ -107,8 +114,8 @@ func startLwIP(fd int) {
 
 	tun = os.NewFile(uintptr(fd), "")
 
-	core.RegisterTCPConnHandler(socks.NewTCPHandler("127.0.0.1", 9999))
-	core.RegisterUDPConnHandler(socks.NewUDPHandler("127.0.0.1", 9999, 180*time.Second, dnsCache))
+	core.RegisterTCPConnHandler(socks.NewTCPHandler(interIP, interPort))
+	core.RegisterUDPConnHandler(socks.NewUDPHandler(interIP, interPort, 180*time.Second, dnsCache))
 
 	core.RegisterOutputFn(func(data []byte) (int, error) {
 		return tun.Write(data)
