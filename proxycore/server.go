@@ -125,18 +125,10 @@ func (ts *tlsServerHolder) ListenAndServeTLS() error {
 		return errors.New("append root cert failed")
 	}
 	server := &http.Server{
-		Addr: serverHost,
-		// Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// 	if r.Method == http.MethodConnect {
-		// 		handleTunneling(w, r)
-		// 	} else {
-		// 		handleHTTP(w, r)
-		// 	}
-		// }),
+		Addr:    serverHost,
 		Handler: goproxy.NewProxyHttpServer(),
 		// Disable HTTP/2.
 		TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler)),
-
 		TLSConfig: &tls.Config{
 			MinVersion: tls.VersionTLS13,
 			ClientAuth: tls.RequireAndVerifyClientCert,
