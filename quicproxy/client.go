@@ -80,32 +80,25 @@ func (c *quicProxy) Serve() error {
 
 func (c *quicProxy) serveOn(con net.Conn, cert tls.Certificate) {
 	defer con.Close()
-	conn, err := c.tryOpenQuic(cert)
+	remoteCon, err := c.tryOpenQuic(cert)
 	if err != nil {
 		log.Println("open quic failed", err)
 		return
 	}
-	defer conn.CloseWithError(0, "0")
+	defer remoteCon.Close()
 
-	stream, err := conn.OpenStreamSync(context.Background())
-	if err != nil {
-		log.Println("open stream failed", err)
-		return
-	}
-
-	defer stream.Close()
 	wg := sync.WaitGroup{}
 	wg.Add(2)
 
 	go func() {
-		_, err := io.Copy(stream, con)
+		_, err := io.Copy(remoteCon, con)
 		if err != nil {
 			log.Println("write data direction con-->stream failed", err)
 		}
 		wg.Done()
 	}()
 	go func() {
-		_, err = io.Copy(con, stream)
+		_, err = io.Copy(con, remoteCon)
 		if err != nil {
 			log.Println("write data direction stream-->con failed", err)
 		}
@@ -114,7 +107,7 @@ func (c *quicProxy) serveOn(con net.Conn, cert tls.Certificate) {
 	wg.Wait()
 }
 
-func (c *quicProxy) tryOpenQuic(cert tls.Certificate) (quic.Connection, error) {
+func (c *quicProxy) tryOpenQuic(cert tls.Certificate) (QuicConn, error) {
 	tlsConf := &tls.Config{
 		InsecureSkipVerify: true,
 		Certificates:       []tls.Certificate{cert},
@@ -129,5 +122,15 @@ func (c *quicProxy) tryOpenQuic(cert tls.Certificate) (quic.Connection, error) {
 		return nil, err
 	}
 
-	return conn, nil
+	stream, err := conn.OpenStreamSync(context.Background())
+	if err != nil {
+		log.Println("open stream failed", err)
+		conn.CloseWithError(0x23, "open stream failed!!!")
+		return nil, err
+	}
+
+	return &QuicStream{
+		Connect: conn,
+		Stream:  stream,
+	}, nil
 }

@@ -8,9 +8,8 @@ import (
 )
 
 type QuicStream struct {
-	Connect   quic.Connection
-	Stream    quic.Stream
-	IsDestory bool
+	Connect quic.Connection
+	Stream  quic.Stream
 }
 
 type QuicConn interface {
@@ -29,9 +28,7 @@ func (s *QuicStream) Write(b []byte) (n int, err error) {
 
 func (s *QuicStream) Close() error {
 	err := s.Stream.Close()
-	if s.IsDestory {
-		s.Connect.CloseWithError(0x45, "op")
-	}
+	s.Connect.CloseWithError(0x45, "op")
 	return err
 }
 

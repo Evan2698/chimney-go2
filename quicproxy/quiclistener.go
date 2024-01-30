@@ -99,37 +99,31 @@ func (ql *QuicListenerHolder) doAccept() {
 			continue
 		}
 		log.Print("accept a session")
-
-		go func(sess quic.Connection) {
-			defer func() {
-				if r := recover(); r != nil {
-					fmt.Println("Recovered. Error:\n", r)
-				}
-			}()
-
-			defer func() {
-				sess.CloseWithError(2020, "AcceptStream error")
-			}()
-
-			for {
-				stream, err := sess.AcceptStream(context.TODO())
-				if err != nil {
-					log.Println("session failed", err)
-					break
-				}
-				log.Printf("accept stream %v", stream.StreamID())
-				ql.chAcceptConn <- &AcceptConn{
-					conn: &QuicStream{
-						Connect:   sess,
-						Stream:    stream,
-						IsDestory: false,
-					},
-					err: nil,
-				}
-			}
-		}(sess)
+		go ql.acceptRoutine(sess)
 	}
 
+}
+
+func (ql *QuicListenerHolder) acceptRoutine(sess quic.Connection) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered. Error:\n", r)
+		}
+	}()
+
+	stream, err := sess.AcceptStream(context.TODO())
+	if err != nil {
+		sess.CloseWithError(2020, "AcceptStream error")
+		return
+	}
+
+	ql.chAcceptConn <- &AcceptConn{
+		conn: &QuicStream{
+			Connect: sess,
+			Stream:  stream,
+		},
+		err: nil,
+	}
 }
 
 func (ql *QuicListenerHolder) Accept() (net.Conn, error) {
