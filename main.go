@@ -35,5 +35,4 @@ func main() {
 	flag.Parse()
 
 	vpnkinds.RunServer(*config, *isServer)
-	//vpnkinds.RunServer(*config, true)
 }

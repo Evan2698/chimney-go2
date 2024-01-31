@@ -1,7 +1,7 @@
 {
-    "server": "127.0.0.1",
+    "server": "142.171.108.114",
     "server_port": 9056,
-    "quic_server_port": 8443,
+    "quic_server_port": 443,
     "dns_port": 5301,
     "local": "127.0.0.1",
     "local_port": 9055,
